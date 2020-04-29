@@ -77,8 +77,6 @@ func resourceServiceDictionaryItemsV1Update(d *schema.ResourceData, meta interfa
 	serviceID := d.Get("service_id").(string)
 	dictionaryID := d.Get("dictionary_id").(string)
 
-	d.Partial(true)
-
 	if d.HasChange("items") {
 
 		var batchDictionaryItems = []*gofastly.BatchDictionaryItem{}
@@ -130,8 +128,6 @@ func resourceServiceDictionaryItemsV1Update(d *schema.ResourceData, meta interfa
 
 		d.SetPartial("items")
 	}
-
-	d.Partial(false)
 
 	return resourceServiceDictionaryItemsV1Read(d, meta)
 }
