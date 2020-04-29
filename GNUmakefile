@@ -37,6 +37,8 @@ fmtcheck:
 errcheck:
 	@sh -c "'$(CURDIR)/scripts/errcheck.sh'"
 
+tfproviderlint:
+	@sh -c "'$(CURDIR)/scripts/tfproviderlint.sh'"
 
 test-compile:
 	@if [ "$(TEST)" = "./..." ]; then \
