@@ -126,7 +126,6 @@ func resourceServiceDictionaryItemsV1Update(d *schema.ResourceData, meta interfa
 			return fmt.Errorf("Error updating dictionary items: service %s, dictionary %s, %s", serviceID, dictionaryID, err)
 		}
 
-		d.SetPartial("items")
 	}
 
 	return resourceServiceDictionaryItemsV1Read(d, meta)
