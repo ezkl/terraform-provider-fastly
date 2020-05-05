@@ -8,3 +8,5 @@ require (
 	github.com/google/jsonapi v0.0.0-20180313013858-2dcc18f43696 // indirect
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
 )
+
+replace github.com/fastly/go-fastly => ../go-fastly

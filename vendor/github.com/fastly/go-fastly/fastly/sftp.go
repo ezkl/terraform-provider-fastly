@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// FTP represents an FTP logging response from the Fastly API.
-type FTP struct {
+// SFTP represents an SFTP logging response from the Fastly API.
+type SFTP struct {
 	ServiceID string `mapstructure:"service_id"`
 	Version   int    `mapstructure:"version"`
 
@@ -18,6 +18,8 @@ type FTP struct {
 	Username          string     `mapstructure:"user"`
 	Password          string     `mapstructure:"password"`
 	PublicKey         string     `mapstructure:"public_key"`
+	SecretKey         string     `mapstructure:"secret_key"`
+	SSHKnownHosts     string     `mapstructure:"ssh_known_hosts"`
 	Path              string     `mapstructure:"path"`
 	Period            uint       `mapstructure:"period"`
 	GzipLevel         uint8      `mapstructure:"gzip_level"`
@@ -31,18 +33,18 @@ type FTP struct {
 	DeletedAt         *time.Time `mapstructure:"deleted_at"`
 }
 
-// ftpsByName is a sortable list of ftps.
-type ftpsByName []*FTP
+// sftpsByName is a sortable list of sftps.
+type sftpsByName []*SFTP
 
 // Len, Swap, and Less implement the sortable interface.
-func (s ftpsByName) Len() int      { return len(s) }
-func (s ftpsByName) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s ftpsByName) Less(i, j int) bool {
+func (s sftpsByName) Len() int      { return len(s) }
+func (s sftpsByName) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sftpsByName) Less(i, j int) bool {
 	return s[i].Name < s[j].Name
 }
 
-// ListFTPsInput is used as input to the ListFTPs function.
-type ListFTPsInput struct {
+// ListSFTPsInput is used as input to the ListSFTPs function.
+type ListSFTPsInput struct {
 	// Service is the ID of the service (required).
 	Service string
 
@@ -50,8 +52,8 @@ type ListFTPsInput struct {
 	Version int
 }
 
-// ListFTPs returns the list of ftps for the configuration version.
-func (c *Client) ListFTPs(i *ListFTPsInput) ([]*FTP, error) {
+// ListSFTPs returns the list of sftps for the configuration version.
+func (c *Client) ListSFTPs(i *ListSFTPsInput) ([]*SFTP, error) {
 	if i.Service == "" {
 		return nil, ErrMissingService
 	}
@@ -60,22 +62,22 @@ func (c *Client) ListFTPs(i *ListFTPsInput) ([]*FTP, error) {
 		return nil, ErrMissingVersion
 	}
 
-	path := fmt.Sprintf("/service/%s/version/%d/logging/ftp", i.Service, i.Version)
+	path := fmt.Sprintf("/service/%s/version/%d/logging/sftp", i.Service, i.Version)
 	resp, err := c.Get(path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var ftps []*FTP
-	if err := decodeJSON(&ftps, resp.Body); err != nil {
+	var sftps []*SFTP
+	if err := decodeJSON(&sftps, resp.Body); err != nil {
 		return nil, err
 	}
-	sort.Stable(ftpsByName(ftps))
-	return ftps, nil
+	sort.Stable(sftpsByName(sftps))
+	return sftps, nil
 }
 
-// CreateFTPInput is used as input to the CreateFTP function.
-type CreateFTPInput struct {
+// CreateSFTPInput is used as input to the CreateSFTP function.
+type CreateSFTPInput struct {
 	// Service is the ID of the service. Version is the specific configuration
 	// version. Both fields are required.
 	Service string
@@ -87,6 +89,8 @@ type CreateFTPInput struct {
 	Username          string `form:"user,omitempty"`
 	Password          string `form:"password,omitempty"`
 	PublicKey         string `form:"public_key,omitempty"`
+	SecretKey         string `form:"secret_key,omitempty"`
+	SSHKnownHosts     string `form:"ssh_known_hosts,omitempty"`
 	Path              string `form:"path,omitempty"`
 	Period            uint   `form:"period,omitempty"`
 	FormatVersion     uint   `form:"format_version,omitempty"`
@@ -97,8 +101,8 @@ type CreateFTPInput struct {
 	Placement         string `form:"placement,omitempty"`
 }
 
-// CreateFTP creates a new Fastly FTP.
-func (c *Client) CreateFTP(i *CreateFTPInput) (*FTP, error) {
+// CreateSFTP creates a new Fastly SFTP.
+func (c *Client) CreateSFTP(i *CreateSFTPInput) (*SFTP, error) {
 	if i.Service == "" {
 		return nil, ErrMissingService
 	}
@@ -107,32 +111,32 @@ func (c *Client) CreateFTP(i *CreateFTPInput) (*FTP, error) {
 		return nil, ErrMissingVersion
 	}
 
-	path := fmt.Sprintf("/service/%s/version/%d/logging/ftp", i.Service, i.Version)
+	path := fmt.Sprintf("/service/%s/version/%d/logging/sftp", i.Service, i.Version)
 	resp, err := c.PostForm(path, i, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var ftp *FTP
+	var ftp *SFTP
 	if err := decodeJSON(&ftp, resp.Body); err != nil {
 		return nil, err
 	}
 	return ftp, nil
 }
 
-// GetFTPInput is used as input to the GetFTP function.
-type GetFTPInput struct {
+// GetSFTPInput is used as input to the GetSFTP function.
+type GetSFTPInput struct {
 	// Service is the ID of the service. Version is the specific configuration
 	// version. Both fields are required.
 	Service string
 	Version int
 
-	// Name is the name of the FTP to fetch.
+	// Name is the name of the SFTP to fetch.
 	Name string
 }
 
-// GetFTP gets the FTP configuration with the given parameters.
-func (c *Client) GetFTP(i *GetFTPInput) (*FTP, error) {
+// GetSFTP gets the SFTP configuration with the given parameters.
+func (c *Client) GetSFTP(i *GetSFTPInput) (*SFTP, error) {
 	if i.Service == "" {
 		return nil, ErrMissingService
 	}
@@ -145,33 +149,35 @@ func (c *Client) GetFTP(i *GetFTPInput) (*FTP, error) {
 		return nil, ErrMissingName
 	}
 
-	path := fmt.Sprintf("/service/%s/version/%d/logging/ftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
+	path := fmt.Sprintf("/service/%s/version/%d/logging/sftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
 	resp, err := c.Get(path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var b *FTP
+	var b *SFTP
 	if err := decodeJSON(&b, resp.Body); err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-// UpdateFTPInput is used as input to the UpdateFTP function.
-type UpdateFTPInput struct {
+// UpdateSFTPInput is used as input to the UpdateSFTP function.
+type UpdateSFTPInput struct {
 	// Service is the ID of the service. Version is the specific configuration
 	// version. Both fields are required.
 	Service string
 	Version int
 
-	// Name is the name of the FTP to update.
+	// Name is the name of the SFTP to update.
 	Name string
 
 	NewName           string `form:"name,omitempty"`
 	Address           string `form:"address,omitempty"`
 	Port              uint   `form:"port,omitempty"`
 	PublicKey         string `form:"public_key,omitempty"`
+	SecretKey         string `form:"secret_key,omitempty"`
+	SSHKnownHosts     string `form:"ssh_known_hosts,omitempty"`
 	Username          string `form:"user,omitempty"`
 	Password          string `form:"password,omitempty"`
 	Path              string `form:"path,omitempty"`
@@ -184,8 +190,8 @@ type UpdateFTPInput struct {
 	Placement         string `form:"placement,omitempty"`
 }
 
-// UpdateFTP updates a specific FTP.
-func (c *Client) UpdateFTP(i *UpdateFTPInput) (*FTP, error) {
+// UpdateSFTP updates a specific SFTP.
+func (c *Client) UpdateSFTP(i *UpdateSFTPInput) (*SFTP, error) {
 	if i.Service == "" {
 		return nil, ErrMissingService
 	}
@@ -198,32 +204,32 @@ func (c *Client) UpdateFTP(i *UpdateFTPInput) (*FTP, error) {
 		return nil, ErrMissingName
 	}
 
-	path := fmt.Sprintf("/service/%s/version/%d/logging/ftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
+	path := fmt.Sprintf("/service/%s/version/%d/logging/sftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
 	resp, err := c.PutForm(path, i, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var b *FTP
+	var b *SFTP
 	if err := decodeJSON(&b, resp.Body); err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-// DeleteFTPInput is the input parameter to DeleteFTP.
-type DeleteFTPInput struct {
+// DeleteSFTPInput is the input parameter to DeleteSFTP.
+type DeleteSFTPInput struct {
 	// Service is the ID of the service. Version is the specific configuration
 	// version. Both fields are required.
 	Service string
 	Version int
 
-	// Name is the name of the FTP to delete (required).
+	// Name is the name of the SFTP to delete (required).
 	Name string
 }
 
-// DeleteFTP deletes the given FTP version.
-func (c *Client) DeleteFTP(i *DeleteFTPInput) error {
+// DeleteSFTP deletes the given SFTP version.
+func (c *Client) DeleteSFTP(i *DeleteSFTPInput) error {
 	if i.Service == "" {
 		return ErrMissingService
 	}
@@ -236,7 +242,7 @@ func (c *Client) DeleteFTP(i *DeleteFTPInput) error {
 		return ErrMissingName
 	}
 
-	path := fmt.Sprintf("/service/%s/version/%d/logging/ftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
+	path := fmt.Sprintf("/service/%s/version/%d/logging/sftp/%s", i.Service, i.Version, url.PathEscape(i.Name))
 	resp, err := c.Delete(path, nil)
 	if err != nil {
 		return err
